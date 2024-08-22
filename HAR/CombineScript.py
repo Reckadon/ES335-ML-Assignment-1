@@ -14,8 +14,8 @@ import numpy as np
 import os
 
 # Give the path of the test and train folder of UCI HAR Dataset
-train_path = "./UCI HAR Dataset/train"
-test_path = "./UCI HAR Dataset/test"
+train_path = "../UCI HAR Dataset/train"
+test_path = "../UCI HAR Dataset/test"
 
 # Dictionary of activities. Provided by the dataset.
 ACTIVITIES = {
@@ -55,8 +55,8 @@ for subject in np.unique(subject_train.values):
     for label in np.unique(labels.values):
 
         # make the folder directory if it does not exist
-        if not os.path.exists(os.path.join("Combined", "Train", ACTIVITIES[label])):
-            os.makedirs(os.path.join("Combined", "Train", ACTIVITIES[label]))
+        if not os.path.exists(os.path.join("../Combined", "Train", ACTIVITIES[label])):
+            os.makedirs(os.path.join("../Combined", "Train", ACTIVITIES[label]))
 
         label_idxs = labels[labels.iloc[:, 0] == label].index
 
@@ -77,7 +77,7 @@ for subject in np.unique(subject_train.values):
 
         # saving the data into csv file
         data = pd.DataFrame({'accx': accx, 'accy': accy, 'accz': accz})
-        save_path = os.path.join("Combined", "Train", ACTIVITIES[label], f"Subject_{subject}.csv")
+        save_path = os.path.join("../Combined", "Train", ACTIVITIES[label], f"Subject_{subject}.csv")
         data.to_csv(save_path, index=False)
 
 print("Done Combining the training data")
@@ -109,8 +109,8 @@ for subject in np.unique(subject_test.values):
     # Toggle through all the labels.
     for label in np.unique(labels.values):
 
-        if not os.path.exists(os.path.join("Combined", "Test", ACTIVITIES[label])):
-            os.makedirs(os.path.join("Combined", "Test", ACTIVITIES[label]))
+        if not os.path.exists(os.path.join("../Combined", "Test", ACTIVITIES[label])):
+            os.makedirs(os.path.join("../Combined", "Test", ACTIVITIES[label]))
 
         label_idxs = labels[labels.iloc[:, 0] == label].index
 
@@ -130,7 +130,7 @@ for subject in np.unique(subject_test.values):
 
         # saving the data into csv file
         data = pd.DataFrame({'accx': accx, 'accy': accy, 'accz': accz})
-        save_path = os.path.join("Combined", "Test", ACTIVITIES[label], f"Subject_{subject}.csv")
+        save_path = os.path.join("../Combined", "Test", ACTIVITIES[label], f"Subject_{subject}.csv")
         data.to_csv(save_path, index=False)
 
 print("Done Combining the testing data")
