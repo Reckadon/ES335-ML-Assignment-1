@@ -15,13 +15,35 @@ def one_hot_encoding(X: pd.DataFrame) -> pd.DataFrame:
     return pd.get_dummies(X)
 
 
+
+
+
 def check_ifreal(y: pd.Series) -> bool:
     """
-    Function to check if the given series has real or discrete values
+    Function to check if the given series has real (continuous) or discrete (categorical) values.
+
+    Parameters:
+    y (pd.Series): The series to check.
+
+    Returns:
+    bool: True if the series contains real (continuous) values, False if it contains discrete (categorical) values.
     """
-    m = list(y)
-    if len(set(m)) / len((m)) > 0.2:
+
+    # Check if the series is of float type or contains any non-integer values
+    if pd.api.types.is_float_dtype(y):
         return True
+    elif pd.api.types.is_numeric_dtype(y) and not all(y == y.astype(int)):
+        return True
+
+    # If the series is of object or category type, it is likely discrete
+    if pd.api.types.is_object_dtype(y) or pd.api.types.is_categorical_dtype(y):
+        return False
+
+    # Check if the series has a small number of unique values compared to its length
+    if y.nunique() < 0.05 * len(y):  # Adjust the threshold as necessary
+        return False
+
+    # Default to discrete if none of the above apply
     return False
 
 
@@ -76,19 +98,20 @@ def information_gain(Y: pd.Series, criterion: str) -> float:
     """
     Function to calculate the information gain using criterion (entropy, gini index or MSE)
     """
-    if criterion == 'entropy':
-        return entropy(Y)
-    elif criterion == 'gini':
-        return gini_index(Y)
-    elif criterion == 'MSE':
-        m = list(Y)
-        mean = Y.mean()
-        c = 0
-        for i in m:
-            c += (i - mean) ** 2
-        return c
-    else:
-        raise ValueError("Criterion not supported")
+    try:
+        if criterion == 'entropy':
+            return entropy(Y)
+        elif criterion == 'gini':
+            return gini_index(Y)
+        elif criterion == 'MSE':
+            mean_value = Y.mean()
+            mse = ((Y - mean_value) ** 2).mean()
+            return mse
+    except ValueError:
+        print("VE")
+
+
+
 
 
 def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.Series):
@@ -101,29 +124,60 @@ def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.S
 
     return: attribute to split upon
     """
-    reqfeature = ""
-    best = np.inf
 
     # According to wheather the features are real or discrete valued and the criterion, find the attribute from the features series with the maximum information gain (entropy or varinace based on the type of output) or minimum gini index (discrete output).
-    # for i in features:
-    #     if check_ifreal(y):
-            # sety = x[i].unique()
-            # splitscore = []
-            # for j in sety:
-            #     l = x[x[i] <= j]
-            #     r = x[x[i] > j]
-            #
-            #     score = len(l) * information_gain(l, criterion) / len(y) + len(r) * information_gain(r,
-            #                                                                                          criterion) / len(
-            #         y)
-            #     splitscore.append((j,score))
-            # a,b = min(splitscore,key=lambda x: x[1])
-        # else:
-        #     a = information_gain(y, criterion)
-        # if criterion = "gini" and a < best:
-        # best = a
-        # reqfeature = i
-        # elif criterion = "MSE" and a < best:
+    req_fet = None
+    # best_score = float('-inf') if criterion == 'entropy' else float('inf')
+    if criterion == 'entropy' or criterion == 'MSE':
+        best_score = float('-inf')
+    else:
+        best_score = float('inf')
+    for i in x.columns:
+        if criterion == 'entropy' or criterion == 'MSE':
+            if check_ifreal(y):
+                msebefore = information_gain(y, 'MSE')
+                mseafter = 0
+                for _,grp in y.groupby(x[i]):
+                    mseafter += information_gain(grp, 'MSE') * grp.size/y.size
+                score = msebefore - mseafter
+            else:
+                entropybefore = information_gain(y, 'entropy')
+                entropyafter = 0
+                for _,grp in y.groupby(x[i]):
+                    entropyafter += information_gain(grp, 'entropy') * grp.size/y.size
+                score = entropybefore - entropyafter
+            if score > best_score:
+                best_score = score
+                req_fet = i
+        elif criterion == 'gini':
+            score = 0
+            for _,grp in y.groupby(x[i]):
+                score += information_gain(grp, 'gini') * grp.size/y.size
+            if score < best_score:
+                best_score = score
+                req_fet = i
+    return req_fet
+
+
+
+
+x = pd.DataFrame({
+        'A': [1, 2, 3, 4],
+        'B': [1, 1, 0, 0]
+    })
+y = pd.Series([1, 1, 0, 0])
+features = pd.Series(['A', 'B'])
+
+print(check_ifreal(y))
+
+
+result = opt_split_attribute(x, y, 'entropy', features)
+
+
+print(result)
+
+
+
 
 
 
@@ -154,3 +208,4 @@ def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
 
     return xLeft, yLeft, xRight, yRight
 
+    pass
