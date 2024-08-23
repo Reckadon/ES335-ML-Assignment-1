@@ -127,11 +127,6 @@ def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.S
 
 
 
-
-
-
-
-
 def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
     """
     Funtion to split the data according to an attribute.
@@ -145,6 +140,17 @@ def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
     """
 
     # Split the data based on a particular value of a particular attribute. You may use masking as a tool to split the data.
+    isReal = check_ifreal(X[attribute])
+    if isReal:
+        xLeft = X[X[attribute] <= value].reset_index(drop=True)
+        xRight = X[X[attribute] > value].reset_index(drop=True)
+        yLeft = y[X[attribute] <= value].reset_index(drop=True)
+        yRight = y[X[attribute] > value].reset_index(drop=True)
+    else:
+        xLeft = X[X[attribute] == value].reset_index(drop=True)
+        xRight = X[X[attribute] != value].reset_index(drop=True)
+        yLeft = y[X[attribute] == value].reset_index(drop=True)
+        yRight = y[X[attribute] != value].reset_index(drop=True)
 
-    pass
-# a pd l
+    return xLeft, yLeft, xRight, yRight
+
