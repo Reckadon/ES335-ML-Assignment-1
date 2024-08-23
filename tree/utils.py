@@ -5,7 +5,6 @@ There is no restriction on following the below template, these fucntions are her
 
 import pandas as pd
 import math
-from collections import Counter
 import numpy as np
 
 
@@ -34,7 +33,12 @@ def entropy(Y: pd.Series) -> float:
     float: The entropy value, ranging from 0 (pure) to 1 (max impurity).
     """
     m = list(Y)
-    counter = Counter(m)
+    counter = {}
+    for i in m:
+        if i in counter:
+            counter[i] += 1
+        else:
+            counter[i] = 1
     entropy = 0
     for count in counter.values():
         p = count / len(m)
@@ -50,9 +54,17 @@ def gini_index(Y: pd.Series) -> float:
     float: The Gini Index value, ranging from 0 (pure) to 1 (max impurity).
     """
     m = list(Y)
-    counter = Counter(m)
+    counter = {}
+    for i in m:
+        if i in counter:
+            counter[i] += 1
+        else:
+            counter[i] = 1
    
-    gini_sum = sum((count / len(m)) ** 2 for count in counter.values())
+    gini_sum = 0
+    for count in counter.values():
+        p = count / len(m)
+        gini_sum += p ** 2
     gini = 1 - gini_sum
     
     return gini
