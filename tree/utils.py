@@ -36,8 +36,9 @@ def entropy(Y: pd.Series) -> float:
     """
     m = list(Y)
     d = {}
-    for i in set(m):
-        d[i] = m.count(i) / len(m)
+    for i in m:
+        d[i] = d.get(i,0) + 1
+
     entropy = 0
     for i in d.values():
         entropy += i * math.log(i, 2)
