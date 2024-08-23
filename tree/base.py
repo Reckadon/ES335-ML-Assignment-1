@@ -20,7 +20,7 @@ np.random.seed(42)
 @dataclass
 class DecisionTree:
     criterion: Literal["information_gain", "gini_index"]  # criterion won't be used for regression
-    max_depth: int 4 # The maximum depth the tree can grow to
+    max_depth: int = 4 # The maximum depth the tree can grow to
 
     def __init__(self, criterion, max_depth=5):
         self.criterion = criterion

@@ -5,7 +5,7 @@ There is no restriction on following the below template, these fucntions are her
 
 import pandas as pd
 import math
-
+from collections import Counter
 import numpy as np
 
 
@@ -14,8 +14,6 @@ def one_hot_encoding(X: pd.DataFrame) -> pd.DataFrame:
     Function to perform one hot encoding on the input data
     """
     return pd.get_dummies(X)
-
-    pass
 
 
 def check_ifreal(y: pd.Series) -> bool:
@@ -27,36 +25,37 @@ def check_ifreal(y: pd.Series) -> bool:
         return True
     return False
 
-    pass
-
 
 def entropy(Y: pd.Series) -> float:
     """
-    Function to calculate the entropy
+    Function to calculate the entropy of a dataset Y.
+
+    Returns:
+    float: The entropy value, ranging from 0 (pure) to 1 (max impurity).
     """
     m = list(Y)
-    d = {}
-    for i in m:
-        d[i] = d.get(i,0) + 1
-
+    counter = Counter(m)
     entropy = 0
-    for i in d.values():
-        entropy += i * math.log(i, 2)
+    for count in counter.values():
+        p = count / len(m)
+        entropy -= p * math.log2(p)
     return entropy
 
 
 def gini_index(Y: pd.Series) -> float:
     """
-    Function to calculate the gini index
+    Function to calculate the Gini Index of a dataset Y.
+
+    Returns:
+    float: The Gini Index value, ranging from 0 (pure) to 1 (max impurity).
     """
     m = list(Y)
-    d = {}
-    for i in set(m):
-        d[i] = m.count(i) / len(m)
-    gini = 0
-    for i in d.values():
-        gini += i ** 2
-    return 1 - gini
+    counter = Counter(m)
+   
+    gini_sum = sum((count / len(m)) ** 2 for count in counter.values())
+    gini = 1 - gini_sum
+    
+    return gini
 
 
 # , attr: pd.Series
@@ -76,6 +75,8 @@ def information_gain(Y: pd.Series, criterion: str) -> float:
         for i in m:
             c += (i - mean) ** 2
         return c
+    else:
+        raise ValueError("Criterion not supported")
 
 
 def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.Series):
