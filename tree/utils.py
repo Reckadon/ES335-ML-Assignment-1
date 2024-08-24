@@ -93,19 +93,26 @@ def gini_index(Y: pd.Series) -> float:
 
 # , attr: pd.Series
 
-def information_gain(Y: pd.Series, criterion: str) -> float:
+def information_gain(y: pd.Series,feature: pd.Series, criterion: str) -> float:
     """
     Function to calculate the information gain using criterion (entropy, gini index or MSE)
     """
     try:
+        df = pd.DataFrame({"Y":y, "feature":feature})
         if criterion == 'entropy':
-            return entropy(Y)
+            entropybefore = entropy(y)
+            entropyafter = 0
+            for _, grp in y.groupby("feature"):
+                entropyafter += entropy(grp.Y) * grp.shape[0] / y.size
+            return entropybefore - entropyafter
         elif criterion == 'gini':
-            return gini_index(Y)
+            return gini_index(y)
         elif criterion == 'MSE':
-            mean_value = Y.mean()
-            mse = ((Y - mean_value) ** 2).mean()
-            return mse
+            mseafter = 0
+            for _, grp in df.groupby("feature"):
+                mseafter += ((grp.Y - grp.Y.mean()) ** 2).mean() * grp.shape[0] / y.size
+            msebefore = ((y - y.mean()) ** 2).mean()
+            return msebefore - mseafter
     except ValueError:
         print("VE")
 
@@ -134,17 +141,9 @@ def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.S
     for i in x.columns:
         if criterion == 'entropy' or criterion == 'MSE':
             if check_ifreal(y):
-                msebefore = information_gain(y, 'MSE')
-                mseafter = 0
-                for _,grp in y.groupby(x[i]):
-                    mseafter += information_gain(grp, 'MSE') * grp.size/y.size
-                score = msebefore - mseafter
+                score = information_gain(y, i, "MSE")
             else:
-                entropybefore = information_gain(y, 'entropy')
-                entropyafter = 0
-                for _,grp in y.groupby(x[i]):
-                    entropyafter += information_gain(grp, 'entropy') * grp.size/y.size
-                score = entropybefore - entropyafter
+                score = information_gain(y, i, "entropy")
             if score > best_score:
                 best_score = score
                 req_fet = i
@@ -155,7 +154,7 @@ def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.S
             if score < best_score:
                 best_score = score
                 req_fet = i
-    return req_fet,best_score
+    return req_fet
 
 
 
@@ -203,6 +202,63 @@ def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
 
     return xLeft, yLeft, xRight, yRight
 
-attribute,value = opt_split_attribute(x, y, 'entropy', features)
+# attribute,value = opt_split_attribute(x, y, 'entropy', features)
+#
+# print(split_data(x, y, attribute, value))
 
-print(split_data(x, y, attribute, value))
+def findSplitValue(X: pd.DataFrame, y: pd.Series, attribute, criterion):
+    """
+    Function to find the optimal value to split a real valued attribute upon
+    """
+
+    attributeToSplit = X[attribute]
+    isReal = check_ifreal(attributeToSplit)
+
+    if not isReal:
+        sortedAttribute = attributeToSplit.sort_values()
+        uniqueValues = sortedAttribute.unique()
+
+        bestValue = None
+        bestScore = -float('inf')
+
+        possibleSplitPoints = uniqueValues
+
+        for splitPoint in possibleSplitPoints:
+            xLeft, yLeft, xRight, yRight = split_data(X, y, attribute, splitPoint)
+            if criterion == 'entropy':
+                entropyBefore = entropy(y)
+                entropyAfter = (yLeft.size / y.size) * entropy(yLeft) + (
+                            yRight.size / y.size) * entropy(yRight)
+                score = entropyBefore - entropyAfter
+
+            elif criterion == 'gini':
+                giniBefore = gini_index(y)
+                giniAfter = (yLeft.size / y.size) * gini_index(yLeft) + (
+                            yRight.size / y.size) * gini_index(yRight)
+                score = giniBefore - giniAfter
+
+            if score > bestScore:
+                bestValue = score
+                bestScore = splitPoint
+        return bestValue
+
+    else:
+        sortedAttribute = attributeToSplit.sort_values().unique()
+
+        bestValue = None
+        bestScore = -float('inf')
+
+        possibleSplitPoints = (sortedAttribute[1:] + sortedAttribute[:-1]) / 2
+
+        for splitPoint in possibleSplitPoints:
+            xLeft, yLeft, xRight, yRight = split_data(X, y, attribute, splitPoint)
+            if criterion == 'MSE':
+                mseBefore = ((y - y.mean()) ** 2).mean()
+                mseAfter = (yLeft.size / y.size) * ((yLeft - yLeft.mean()) ** 2).mean() + (
+                yRight.size / y.size) * ((yRight - yRight.mean()) ** 2).mean()
+                score = mseBefore - mseAfter
+            if score > bestScore:
+                bestValue = score
+                bestScore = splitPoint
+
+        return bestValue
