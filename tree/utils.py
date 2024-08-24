@@ -4,47 +4,117 @@ There is no restriction on following the below template, these fucntions are her
 """
 
 import pandas as pd
+import math
+import numpy as np
+
 
 def one_hot_encoding(X: pd.DataFrame) -> pd.DataFrame:
     """
     Function to perform one hot encoding on the input data
     """
+    return pd.get_dummies(X)
 
-    pass
+
+
+
 
 def check_ifreal(y: pd.Series) -> bool:
     """
-    Function to check if the given series has real or discrete values
+    Function to check if the given series has real (continuous) or discrete (categorical) values.
+
+    Parameters:
+    y (pd.Series): The series to check.
+
+    Returns:
+    bool: True if the series contains real (continuous) values, False if it contains discrete (categorical) values.
     """
 
-    pass
+    # Check if the series is of float type or contains any non-integer values
+    if pd.api.types.is_float_dtype(y):
+        return True
+    elif pd.api.types.is_numeric_dtype(y) and not all(y == y.astype(int)):
+        return True
+
+    # If the series is of object or category type, it is likely discrete
+    if pd.api.types.is_object_dtype(y) or pd.api.types.is_categorical_dtype(y):
+        return False
+
+    # Check if the series has a small number of unique values compared to its length
+    if y.nunique() < 0.05 * len(y):  # Adjust the threshold as necessary
+        return False
+
+    # Default to discrete if none of the above apply
+    return False
 
 
 def entropy(Y: pd.Series) -> float:
     """
-    Function to calculate the entropy
-    """
+    Function to calculate the entropy of a dataset Y.
 
-    pass
+    Returns:
+    float: The entropy value, ranging from 0 (pure) to 1 (max impurity).
+    """
+    m = list(Y)
+    counter = {}
+    for i in m:
+        if i in counter:
+            counter[i] += 1
+        else:
+            counter[i] = 1
+    entropy = 0
+    for count in counter.values():
+        p = count / len(m)
+        entropy -= p * math.log2(p)
+    return entropy
 
 
 def gini_index(Y: pd.Series) -> float:
     """
-    Function to calculate the gini index
+    Function to calculate the Gini Index of a dataset Y.
+
+    Returns:
+    float: The Gini Index value, ranging from 0 (pure) to 1 (max impurity).
     """
+    m = list(Y)
+    counter = {}
+    for i in m:
+        if i in counter:
+            counter[i] += 1
+        else:
+            counter[i] = 1
+   
+    gini_sum = 0
+    for count in counter.values():
+        p = count / len(m)
+        gini_sum += p ** 2
+    gini = 1 - gini_sum
+    
+    return gini
 
-    pass
 
+# , attr: pd.Series
 
-def information_gain(Y: pd.Series, attr: pd.Series, criterion: str) -> float:
+def information_gain(Y: pd.Series, criterion: str) -> float:
     """
     Function to calculate the information gain using criterion (entropy, gini index or MSE)
     """
+    try:
+        if criterion == 'entropy':
+            return entropy(Y)
+        elif criterion == 'gini':
+            return gini_index(Y)
+        elif criterion == 'MSE':
+            mean_value = Y.mean()
+            mse = ((Y - mean_value) ** 2).mean()
+            return mse
+    except ValueError:
+        print("VE")
 
-    pass
 
 
-def opt_split_attribute(X: pd.DataFrame, y: pd.Series, criterion, features: pd.Series):
+
+
+def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.Series):
     """
     Function to find the optimal attribute to split about.
     If needed you can split this function into 2, one for discrete and one for real valued features.
@@ -56,8 +126,59 @@ def opt_split_attribute(X: pd.DataFrame, y: pd.Series, criterion, features: pd.S
     """
 
     # According to wheather the features are real or discrete valued and the criterion, find the attribute from the features series with the maximum information gain (entropy or varinace based on the type of output) or minimum gini index (discrete output).
+    req_fet = None
+    # best_score = float('-inf') if criterion == 'entropy' else float('inf')
+    if criterion == 'entropy' or criterion == 'MSE':
+        best_score = float('-inf')
+    else:
+        best_score = float('inf')
+    for i in x.columns:
+        if criterion == 'entropy' or criterion == 'MSE':
+            if check_ifreal(y):
+                msebefore = information_gain(y, 'MSE')
+                mseafter = 0
+                for _,grp in y.groupby(x[i]):
+                    mseafter += information_gain(grp, 'MSE') * grp.size/y.size
+                score = msebefore - mseafter
+            else:
+                entropybefore = information_gain(y, 'entropy')
+                entropyafter = 0
+                for _,grp in y.groupby(x[i]):
+                    entropyafter += information_gain(grp, 'entropy') * grp.size/y.size
+                score = entropybefore - entropyafter
+            if score > best_score:
+                best_score = score
+                req_fet = i
+        elif criterion == 'gini':
+            score = 0
+            for _,grp in y.groupby(x[i]):
+                score += information_gain(grp, 'gini') * grp.size/y.size
+            if score < best_score:
+                best_score = score
+                req_fet = i
+    return req_fet
 
-    pass
+
+
+
+x = pd.DataFrame({
+        'A': [1, 2, 3, 4],
+        'B': [1, 1, 0, 0]
+    })
+y = pd.Series([1, 1, 0, 0])
+features = pd.Series(['A', 'B'])
+
+print(check_ifreal(y))
+
+
+result = opt_split_attribute(x, y, 'entropy', features)
+
+
+print(result)
+
+
+
+
 
 
 def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
@@ -73,5 +194,18 @@ def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
     """
 
     # Split the data based on a particular value of a particular attribute. You may use masking as a tool to split the data.
+    isReal = check_ifreal(X[attribute])
+    if isReal:
+        xLeft = X[X[attribute] <= value].reset_index(drop=True)
+        xRight = X[X[attribute] > value].reset_index(drop=True)
+        yLeft = y[X[attribute] <= value].reset_index(drop=True)
+        yRight = y[X[attribute] > value].reset_index(drop=True)
+    else:
+        xLeft = X[X[attribute] == value].reset_index(drop=True)
+        xRight = X[X[attribute] != value].reset_index(drop=True)
+        yLeft = y[X[attribute] == value].reset_index(drop=True)
+        yRight = y[X[attribute] != value].reset_index(drop=True)
+
+    return xLeft, yLeft, xRight, yRight
 
     pass
