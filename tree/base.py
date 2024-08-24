@@ -71,6 +71,7 @@ class DecisionTree:
 
 
 
+
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
         Funtion to run the decision tree on test inputs
