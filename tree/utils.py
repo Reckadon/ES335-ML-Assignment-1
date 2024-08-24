@@ -155,7 +155,7 @@ def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.S
             if score < best_score:
                 best_score = score
                 req_fet = i
-    return req_fet
+    return req_fet,best_score
 
 
 
@@ -202,3 +202,7 @@ def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
         yRight = y[X[attribute] != value].reset_index(drop=True)
 
     return xLeft, yLeft, xRight, yRight
+
+attribute,value = opt_split_attribute(x, y, 'entropy', features)
+
+print(split_data(x, y, attribute, value))

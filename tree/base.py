@@ -25,15 +25,47 @@ class DecisionTree:
     def __init__(self, criterion, max_depth=5):
         self.criterion = criterion
         self.max_depth = max_depth
+        self.t_ = None   # Stores the decision tree. Not to be accessed outside class.`
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
+    def fit(self, X: pd.DataFrame, y: pd.Series,depth=0) -> None:
         """
         Function to train and construct the decision tree
         """
 
         # If you wish your code can have cases for different types of input and output data (discrete, real)
         # Use the functions from utils.py to find the optimal attribute to split upon and then construct the tree accordingly.
-        # You may(according to your implemetation) need to call functions recursively to construct the tree. 
+        # You may(according to your implemetation) need to call functions recursively to construct the tree.
+
+        # Base cases : Max depth reached, No further features to split on, All points have same y value.
+        if not check_ifreal(y):
+            if depth >= self.max_depth:
+                self.t_ = y.mode([0])
+                return
+            if X.empty or X.shape[1] == 0:
+                self.t_ = y.mode([0])
+                return
+            if y.nunique() == 1:
+                self.t_ = y.loc[0]
+                return
+        else:
+            if depth >= self.max_depth:
+                self.t_ = np.mean(y)
+                return
+            if X.empty or X.shape[1] == 0:
+                self.t_ = np.mean(y)
+                return
+            if y.nunique() == 1:
+                self.t_ = y.loc[0]
+                return
+
+
+
+        attribute,value = opt_split_attribute(X,y,self.criterion,X.columns)
+        self.t_ = {attribute: {}}
+        uval = X[attribute].unique()
+
+
+
 
         pass
 
