@@ -16,8 +16,6 @@ def one_hot_encoding(X: pd.DataFrame) -> pd.DataFrame:
 
 
 
-
-
 def check_ifreal(y: pd.Series) -> bool:
     """
     Function to check if the given series has real (continuous) or discrete (categorical) values.
@@ -32,11 +30,11 @@ def check_ifreal(y: pd.Series) -> bool:
     # Check if the series is of float type or contains any non-integer values
     if pd.api.types.is_float_dtype(y):
         return True
-    elif pd.api.types.is_numeric_dtype(y) and not all(y == y.astype(int)):
+    if pd.api.types.is_numeric_dtype(y) and not all(y == y.astype(int)):
         return True
 
     # If the series is of object or category type, it is likely discrete
-    if pd.api.types.is_object_dtype(y) or pd.api.types.is_categorical_dtype(y):
+    if pd.api.types.is_object_dtype(y) or isinstance(y.dtype, pd.CategoricalDtype):
         return False
 
     # Check if the series has a small number of unique values compared to its length
@@ -45,6 +43,7 @@ def check_ifreal(y: pd.Series) -> bool:
 
     # Default to discrete if none of the above apply
     return False
+
 
 
 def entropy(Y: pd.Series) -> float:
@@ -177,10 +176,6 @@ result = opt_split_attribute(x, y, 'entropy', features)
 print(result)
 
 
-
-
-
-
 def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
     """
     Funtion to split the data according to an attribute.
@@ -207,5 +202,3 @@ def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
         yRight = y[X[attribute] != value].reset_index(drop=True)
 
     return xLeft, yLeft, xRight, yRight
-
-    pass
