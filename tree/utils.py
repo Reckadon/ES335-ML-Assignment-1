@@ -92,7 +92,11 @@ def gini_index(Y: pd.Series) -> float:
 # , attr: pd.Series
 
 def MSE(Y: pd.Series) -> float:
-    return ((Y - Y.mean()) ** 2).mean()
+    try:
+        return ((Y - Y.mean()) ** 2).mean()
+    except:
+        print(Y)
+        return 0
 
 
 def information_gain(parent: pd.Series, left: pd.Series, right: pd.Series, criterion: str) -> float:
@@ -159,7 +163,7 @@ def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.S
     for feature in features:
         x_feature = x[feature]
 
-        if check_ifreal(x_feature):  # Real
+        if check_ifreal(x_feature) and x_feature.dtype != 'category':  # Real
             unique_values = np.unique(x_feature)
             thresholds = (unique_values[:-1] + unique_values[1:]) / 2.0
 
@@ -169,7 +173,7 @@ def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.S
                     if len(left_y) > 0 and len(right_y) > 0:
                         if criterion == 'information_gain' or criterion == 'MSE' or criterion == 'entropy':
                             ig = information_gain(y, left_y, right_y, 'MSE')
-                        elif criterion == 'gini index':
+                        elif criterion == 'gini_index':
                             ig = information_gain(y, left_y, right_y, 'gini')
                         else:
                             raise ValueError(f'Unsupported criterion: {criterion}')

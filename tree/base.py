@@ -74,7 +74,22 @@ class DecisionTree:
         """
         Helper function to predict the value for a single data point.
         """
-
+        if not check_ifreal(x):
+            if isinstance(tree, pd.Series):
+                return tree
+            attribute = list(tree.keys())[0]
+            if x[attribute] <= tree[attribute]['bestval']:
+                return self.predict_single(x, tree[attribute]['left'])
+            else:
+                return self.predict_single(x, tree[attribute]['right'])
+        else:
+            if isinstance(tree, (int, float)):
+                return tree
+            attribute = list(tree.keys())[0]
+            if x[attribute] <= tree[attribute]['left']:
+                return self.predict_single(x, tree[attribute]['left'])
+            else:
+                return self.predict_single(x, tree[attribute]['right'])
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
@@ -108,4 +123,3 @@ X.columns = ["A", "B", "C", "D", "E"]
 y = pd.Series(np.random.randn(N))
 tree = DecisionTree(criterion='entropy', max_depth=4)
 tree.fit(X, y)
-
