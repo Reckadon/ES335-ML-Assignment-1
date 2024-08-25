@@ -20,14 +20,14 @@ np.random.seed(42)
 @dataclass
 class DecisionTree:
     criterion: Literal["information_gain", "gini_index"]  # criterion won't be used for regression
-    max_depth: int = 4 # The maximum depth the tree can grow to
+    max_depth: int = 4  # The maximum depth the tree can grow to
 
     def __init__(self, criterion, max_depth=5):
         self.criterion = criterion
         self.max_depth = max_depth
-        self.t_ = None   # Stores the decision tree. Not to be accessed outside class.`
+        self.t_ = None  # Stores the decision tree. Not to be accessed outside class.`
 
-    def fit(self, X: pd.DataFrame, y: pd.Series,depth=0) -> None:
+    def fit(self, X: pd.DataFrame, y: pd.Series, depth=0) -> None:
         """
         Function to train and construct the decision tree
         """
@@ -45,7 +45,7 @@ class DecisionTree:
                 self.t_ = y.mode([0])
                 return
             if y.nunique() == 1:
-                self.t_ = y.loc[0]
+                self.t_ = y.iloc[0]
                 return
         else:
             if depth >= self.max_depth:
@@ -55,46 +55,32 @@ class DecisionTree:
                 self.t_ = np.mean(y)
                 return
             if y.nunique() == 1:
-                self.t_ = y.loc[0]
+                self.t_ = y.iloc[0]
                 return
 
-        attribute = opt_split_attribute(X,y,self.criterion,X.columns)
-        print(attribute)
-        bestval = findSplitValue(X,y,attribute,self.criterion)
+        attribute, bestval = opt_split_attribute(X, y, self.criterion, X.columns)
+        # print(attribute)
 
         self.t_ = {attribute: {}}
-        xleft,yleft,xright,yright = split_data(X,y,attribute,bestval)
-        leftsubtree = DecisionTree(self.criterion,max_depth=self.max_depth)
-        leftsubtree.fit(xleft,yleft,depth+1)
+        xleft, yleft, xright, yright = splitdataframe(X, y, attribute, bestval)
+        leftsubtree = DecisionTree(self.criterion, max_depth=self.max_depth)
+        leftsubtree.fit(xleft, yleft, depth + 1)
         self.t_[attribute]['left'] = leftsubtree.t_
-        rightsubtree = DecisionTree(self.criterion,max_depth=self.max_depth)
-        rightsubtree.fit(xright,yright,depth+1)
+        rightsubtree = DecisionTree(self.criterion, max_depth=self.max_depth)
+        rightsubtree.fit(xright, yright, depth + 1)
         self.t_[attribute]['right'] = rightsubtree.t_
 
     def predict_single(self, x: pd.Series, tree) -> float:
         """
         Helper function to predict the value for a single data point.
         """
-        if not isinstance(tree, dict):
-            return tree
 
-        attribute = next(iter(tree))
-        if check_ifreal(x[attribute]):
-            if x[attribute] <= list(tree[attribute].keys())[0]:
-                return self.predict_single(x, tree[attribute]['left'])
-            else:
-                return self.predict_single(x, tree[attribute]['right'])
-        else:
-            if x[attribute] == list(tree[attribute].keys())[0]:
-                return self.predict_single(x, tree[attribute]['left'])
-            else:
-                return self.predict_single(x, tree[attribute]['right'])
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
         Funtion to run the decision tree on test inputs
         """
-        return X.apply(lambda x: self.predict_single(x, self.t_), axis=1)
+
 
         # Traverse the tree you constructed to return the predicted values for the given test inputs.
 
@@ -118,7 +104,7 @@ class DecisionTree:
 N = 30
 P = 5
 X = pd.DataFrame(np.random.randn(N, P))
-X.columns = ["A", "B", "C","D","E"]
+X.columns = ["A", "B", "C", "D", "E"]
 y = pd.Series(np.random.randn(N))
 tree = DecisionTree(criterion='entropy', max_depth=4)
 tree.fit(X, y)
