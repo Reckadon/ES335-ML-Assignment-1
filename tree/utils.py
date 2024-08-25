@@ -316,6 +316,7 @@ def splitdataframe(x: pd.DataFrame, y: pd.Series, attribute, value):
 #
 #         possibleSplitPoints = (sortedAttribute[1:] + sortedAttribute[:-1]) / 2
 #
+
 #         for splitPoint in possibleSplitPoints:
 #             xLeft, yLeft, xRight, yRight = split_data(X, y, attribute, splitPoint)
 #             if criterion == 'MSE':

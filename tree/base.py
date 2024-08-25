@@ -108,3 +108,4 @@ X.columns = ["A", "B", "C", "D", "E"]
 y = pd.Series(np.random.randn(N))
 tree = DecisionTree(criterion='entropy', max_depth=4)
 tree.fit(X, y)
+
