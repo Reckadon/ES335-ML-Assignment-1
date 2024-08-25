@@ -13,15 +13,22 @@ import matplotlib.pyplot as plt
 from tree.base import DecisionTree
 from metrics import *
 
-np.random.seed(42)
+np.random.seed(4)
 # Test case 1
 # Real Input and Real Output
 
 N = 30
 P = 5
 X = pd.DataFrame(np.random.randn(N, P))
+X.columns = ["A", "B", "C","D","E"]
 y = pd.Series(np.random.randn(N))
 
+# X = pd.DataFrame({
+#         'A': [1, 1, 3, 0],
+#         'B': [1, 2, 3, 4]
+#     })
+# y = pd.Series([1, 1, 0, 0])
+# features = pd.Series(['A', 'B'])
 
 for criteria in ["information_gain", "gini_index"]:
     tree = DecisionTree(criterion=criteria)  # Split based on Inf. Gain

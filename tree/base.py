@@ -59,7 +59,9 @@ class DecisionTree:
                 return
 
         attribute = opt_split_attribute(X,y,self.criterion,X.columns)
-        bestval = findSplitValue(X,y,attribute,criteria)
+        print(attribute)
+        bestval = findSplitValue(X,y,attribute,self.criterion)
+
         self.t_ = {attribute: {}}
         xleft,yleft,xright,yright = split_data(X,y,attribute,bestval)
         leftsubtree = DecisionTree(self.criterion,max_depth=self.max_depth)
@@ -69,13 +71,30 @@ class DecisionTree:
         rightsubtree.fit(xright,yright,depth+1)
         self.t_[attribute]['right'] = rightsubtree.t_
 
+    def predict_single(self, x: pd.Series, tree) -> float:
+        """
+        Helper function to predict the value for a single data point.
+        """
+        if not isinstance(tree, dict):
+            return tree
 
-
+        attribute = next(iter(tree))
+        if check_ifreal(x[attribute]):
+            if x[attribute] <= list(tree[attribute].keys())[0]:
+                return self.predict_single(x, tree[attribute]['left'])
+            else:
+                return self.predict_single(x, tree[attribute]['right'])
+        else:
+            if x[attribute] == list(tree[attribute].keys())[0]:
+                return self.predict_single(x, tree[attribute]['left'])
+            else:
+                return self.predict_single(x, tree[attribute]['right'])
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
         Funtion to run the decision tree on test inputs
         """
+        return X.apply(lambda x: self.predict_single(x, self.t_), axis=1)
 
         # Traverse the tree you constructed to return the predicted values for the given test inputs.
 
@@ -94,3 +113,12 @@ class DecisionTree:
         Where Y => Yes and N => No
         """
         pass
+
+
+N = 30
+P = 5
+X = pd.DataFrame(np.random.randn(N, P))
+X.columns = ["A", "B", "C","D","E"]
+y = pd.Series(np.random.randn(N))
+tree = DecisionTree(criterion='entropy', max_depth=4)
+tree.fit(X, y)
