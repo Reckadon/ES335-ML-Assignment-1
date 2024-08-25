@@ -81,40 +81,35 @@ def gini_index(Y: pd.Series) -> float:
             counter[i] += 1
         else:
             counter[i] = 1
-   
+
     gini_sum = 0
     for count in counter.values():
         p = count / len(m)
         gini_sum += p ** 2
     gini = 1 - gini_sum
-    
+
     return gini
 
 
 # , attr: pd.Series
 
-def information_gain(y: pd.Series,feature: pd.Series, criterion: str) -> float:
-    """
-    Function to calculate the information gain using criterion (entropy, gini index or MSE)
-    """
-    try:
-        df = pd.DataFrame({"Y":y, "feature":feature})
-        if criterion == 'entropy':
-            entropybefore = entropy(y)
-            entropyafter = 0
-            for _, grp in y.groupby("feature"):
-                entropyafter += entropy(grp.Y) * grp.shape[0] / y.size
-            return entropybefore - entropyafter
-        elif criterion == 'gini':
-            return gini_index(y)
-        elif criterion == 'MSE':
-            mseafter = 0
-            for _, grp in df.groupby("feature"):
-                mseafter += ((grp.Y - grp.Y.mean()) ** 2).mean() * grp.shape[0] / y.size
-            msebefore = ((y - y.mean()) ** 2).mean()
-            return msebefore - mseafter
-    except ValueError:
-        print("VE")
+
+
+def information_gain(Y: pd.Series, criterion: str) -> float:
+        """
+        Function to calculate the information gain using criterion (entropy, gini index or MSE)
+        """
+        try:
+            if criterion == 'entropy':
+                return entropy(Y)
+            elif criterion == 'gini':
+                return gini_index(Y)
+            elif criterion == 'MSE':
+                mean_value = Y.mean()
+                mse = ((Y - mean_value) ** 2).mean()
+                return mse
+        except ValueError:
+            print("VE")
 
 
 
@@ -138,12 +133,20 @@ def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.S
         best_score = float('-inf')
     else:
         best_score = float('inf')
-    for i in x.columns:
+    for i in features:
         if criterion == 'entropy' or criterion == 'MSE':
             if check_ifreal(y):
-                score = information_gain(y, i, "MSE")
+                msebefore = information_gain(y, 'MSE')
+                mseafter = 0
+                for _,grp in y.groupby(x[i]):
+                    mseafter += information_gain(grp, 'MSE') * grp.size/y.size
+                score = msebefore - mseafter
             else:
-                score = information_gain(y, i, "entropy")
+                entropybefore = information_gain(y, 'entropy')
+                entropyafter = 0
+                for _,grp in y.groupby(x[i]):
+                    entropyafter += information_gain(grp, 'entropy') * grp.size/y.size
+                score = entropybefore - entropyafter
             if score > best_score:
                 best_score = score
                 req_fet = i
@@ -159,20 +162,21 @@ def opt_split_attribute(x: pd.DataFrame, y: pd.Series, criterion, features: pd.S
 
 
 
-x = pd.DataFrame({
-        'A': [1, 2, 3, 4],
-        'B': [1, 1, 0, 0]
-    })
-y = pd.Series([1, 1, 0, 0])
-features = pd.Series(['A', 'B'])
 
-print(check_ifreal(y))
-
-
-result = opt_split_attribute(x, y, 'entropy', features)
-
-
-print(result)
+# x = pd.DataFrame({
+#         'A': [1, 2, 3, 4],
+#         'B': [1, 1, 0, 0]
+#     })
+# y = pd.Series([1, 1, 0, 0])
+# features = pd.Series(['A', 'B'])
+#
+# print(check_ifreal(y))
+#
+#
+# result = opt_split_attribute(x, y, 'entropy', features)
+#
+#
+# print(result)
 
 
 def split_data(X: pd.DataFrame, y: pd.Series, attribute, value):
@@ -213,6 +217,7 @@ def findSplitValue(X: pd.DataFrame, y: pd.Series, attribute, criterion):
 
     attributeToSplit = X[attribute]
     isReal = check_ifreal(attributeToSplit)
+    score = 0
 
     if not isReal:
         sortedAttribute = attributeToSplit.sort_values()
@@ -262,3 +267,5 @@ def findSplitValue(X: pd.DataFrame, y: pd.Series, attribute, criterion):
                 bestScore = splitPoint
 
         return bestValue
+#
+# print(findSplitValue(x,y,'A','entropy'))
