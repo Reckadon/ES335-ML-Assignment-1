@@ -59,7 +59,7 @@ class DecisionTree:
                 return
 
         attribute = opt_split_attribute(X,y,self.criterion,X.columns)
-        bestval = findSplitValue(X,y,attribute,criteria)
+        bestval = findSplitValue(X,y,attribute,self.criterion)
         self.t_ = {attribute: {}}
         xleft,yleft,xright,yright = split_data(X,y,attribute,bestval)
         leftsubtree = DecisionTree(self.criterion,max_depth=self.max_depth)
