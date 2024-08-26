@@ -49,8 +49,12 @@ class DecisionTree:
                 return
         else:
             if depth >= self.max_depth:
-                self.t_ = np.mean(y)
-                return
+                try:
+                    self.t_ = np.mean(y)
+                    return
+                except:
+                    self.t_ = y.mode([0])
+                    return
             if X.empty or X.shape[1] == 0:
                 self.t_ = np.mean(y)
                 return
@@ -70,36 +74,107 @@ class DecisionTree:
         rightsubtree.fit(xright, yright, depth + 1)
         self.t_[attribute]['right'] = rightsubtree.t_
 
-    def predict_single(self, x: pd.Series, tree) -> float:
+    # def predict_single(self, x: pd.Series, tree) -> float:
+    #     """
+    #     Helper function to predict the value for a single data point.
+    #     """
+    #     if not check_ifreal(x):
+    #         if isinstance(tree, pd.Series):
+    #             return tree
+    #         attribute = list(tree.keys())[0]
+    #         if x[attribute] <= tree[attribute]['bestval']:
+    #             return self.predict_single(x, tree[attribute]['left'])
+    #         else:
+    #             return self.predict_single(x, tree[attribute]['right'])
+    #     else:
+    #         if isinstance(tree, (int, float)):
+    #             return tree
+    #         attribute = list(tree.keys())[0]
+    #         if x[attribute] <= tree[attribute]['left']:
+    #             return self.predict_single(x, tree[attribute]['left'])
+    #         else:
+    #             return self.predict_single(x, tree[attribute]['right'])
+    #
+    # def predict(self, X: pd.DataFrame) -> pd.Series:
+    #     """
+    #     Funtion to run the decision tree on test inputs
+    #
+    #     """
+    #     # return X.apply(lambda x: self.predict_single(x, self.t_), axis=1)
+    #
+    #     # Traverse the tree you constructed to return the predicted values for the given test inputs.
+    #
+    #     pass
+
+
+
+    def traverse_tree(self, node, x_row):
         """
-        Helper function to predict the value for a single data point.
+        Traverse the decision tree to predict the class label for a single row of input data.
         """
-        if not check_ifreal(x):
-            if isinstance(tree, pd.Series):
-                return tree
-            attribute = list(tree.keys())[0]
-            if x[attribute] <= tree[attribute]['bestval']:
-                return self.predict_single(x, tree[attribute]['left'])
-            else:
-                return self.predict_single(x, tree[attribute]['right'])
-        else:
-            if isinstance(tree, (int, float)):
-                return tree
-            attribute = list(tree.keys())[0]
-            if x[attribute] <= tree[attribute]['left']:
-                return self.predict_single(x, tree[attribute]['left'])
-            else:
-                return self.predict_single(x, tree[attribute]['right'])
+        if isinstance(node, dict):  # Internal node
+            attribute = list(node.keys())[0]
+            subtree = node[attribute]
+
+            split_value = list(subtree.keys())[0]
+
+            if isinstance(split_value, (int, float)):  # Numerical split
+                if x_row[attribute] <= split_value:
+                    return self.traverse_tree(subtree[split_value]['left'], x_row)
+                else:
+                    return self.traverse_tree(subtree[split_value]['right'], x_row)
+            else:  # Categorical split
+                if x_row[attribute] == split_value:
+                    return self.traverse_tree(subtree[split_value]['left'], x_row)
+                else:
+                    return self.traverse_tree(subtree[split_value]['right'], x_row)
+        else:  # Leaf node
+            return node
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
-        Funtion to run the decision tree on test inputs
+        Predict the class labels for the given input data X.
         """
+        predictions = X.apply(lambda x_row: self.traverse_tree(self.t_, x_row), axis=1)
+        return pd.Series(predictions)
 
+    # def predict(self, X: pd.DataFrame) -> pd.Series:
+    #     """
+    #     Function to predict the output for the given test inputs.
+    #     It traverses the decision tree constructed during the fit process.
+    #     """
+    #
+    #     def traverse_tree(node, x_row):
+    #         if isinstance(node, dict):  # Node is a decision node
+    #             attribute = list(node.keys())[0]
+    #             subtree = node[attribute]
+    #
+    #             # Check if the split is based on a threshold (continuous feature) or equality (categorical feature)
+    #             split_value = list(subtree.keys())[0]
+    #
+    #             if isinstance(split_value, (int, float, np.number)):  # Continuous feature
+    #                 if x_row[attribute] <= split_value:
+    #                     return traverse_tree(subtree[split_value]['left'], x_row)
+    #                 else:
+    #                     return traverse_tree(subtree[split_value]['right'], x_row)
+    #             else:  # Discrete feature
+    #                 if x_row[attribute] == split_value:
+    #                     return traverse_tree(subtree[split_value]['left'], x_row)
+    #                 else:
+    #                     return traverse_tree(subtree[split_value]['right'], x_row)
+    #         else:  # Leaf node
+    #             return node
+    #
+    #     # Apply the traverse_tree function to each row in X
+    #     predictions = X.apply(lambda x_row: traverse_tree(self.t_, x_row), axis=1)
+    #
+    #     return pd.Series(predictions)
 
-        # Traverse the tree you constructed to return the predicted values for the given test inputs.
-
-        pass
+    # Example usage:
+    # Assuming you have fitted your model:
+    # dt = DecisionTree(criterion='entropy', max_depth=3)
+    # dt.fit(X_train, y_train)
+    # predictions = dt.predict(X_test)
 
     def plot(self) -> None:
         """
@@ -116,10 +191,10 @@ class DecisionTree:
         pass
 
 
-N = 30
-P = 5
-X = pd.DataFrame(np.random.randn(N, P))
-X.columns = ["A", "B", "C", "D", "E"]
-y = pd.Series(np.random.randn(N))
-tree = DecisionTree(criterion='entropy', max_depth=4)
-tree.fit(X, y)
+# N = 30
+# P = 5
+# X = pd.DataFrame(np.random.randn(N, P))
+# X.columns = ["A", "B", "C", "D", "E"]
+# y = pd.Series(np.random.randn(N))
+# tree = DecisionTree(criterion='entropy', max_depth=4)
+# tree.fit(X, y)
