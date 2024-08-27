@@ -23,8 +23,8 @@ def create_binary_dataset(N, M):
 timeFitting = [[0]*100 for i in range(100)]
 timePredicting = [[0]*100 for i in range(100)]
 
-for n in range(1,100):
-    for m in range(1,100):
+for n in range(1,10):
+    for m in range(1,10):
         trainDF = create_binary_dataset(n, m)
         X_train = trainDF.drop(columns='Output')
         y_train = trainDF['Output']
