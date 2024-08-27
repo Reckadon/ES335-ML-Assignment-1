@@ -1,200 +1,104 @@
-"""
-The current code given is for the Assignment 1.
-You will be expected to use this to make trees for:
-> discrete input, discrete output
-> real input, real output
-> real input, discrete output
-> discrete input, real output
-"""
-from dataclasses import dataclass
-from typing import Literal
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from tree.utils import *
+from .utils import *
 
-np.random.seed(42)
+class Node:
+    def __init__(self,feature,threshold,left,right,value) -> None:
+        self.feature = feature
+        self.threshold = threshold
+        self.left = left
+        self.right = right
+        self.value = value
 
-
-@dataclass
 class DecisionTree:
-    criterion: Literal["information_gain", "gini_index"]  # criterion won't be used for regression
-    max_depth: int = 4  # The maximum depth the tree can grow to
-
-    def __init__(self, criterion, max_depth=5):
+    def __init__(self,criterion,maxDepth = 5) -> None:
         self.criterion = criterion
-        self.max_depth = max_depth
-        self.t_ = None  # Stores the decision tree. Not to be accessed outside class.`
+        self.maxDepth = maxDepth
+        self.isRealOutput = False
 
-    def fit(self, X: pd.DataFrame, y: pd.Series, depth=0) -> None:
-        """
-        Function to train and construct the decision tree
-        """
-
-        # If you wish your code can have cases for different types of input and output data (discrete, real)
-        # Use the functions from utils.py to find the optimal attribute to split upon and then construct the tree accordingly.
-        # You may(according to your implemetation) need to call functions recursively to construct the tree.
-
-        # Base cases : Max depth reached, No further features to split on, All points have same y value.
-        if not check_ifreal(y):
-            if depth >= self.max_depth:
-                self.t_ = y.mode([0])
-                return
-            if X.empty or X.shape[1] == 0:
-                self.t_ = y.mode([0])
-                return
-            if y.nunique() == 1:
-                self.t_ = y.iloc[0]
-                return
-        else:
-            if depth >= self.max_depth:
-                try:
-                    self.t_ = np.mean(y)
-                    return
-                except:
-                    self.t_ = y.mode([0])
-                    return
-            if X.empty or X.shape[1] == 0:
-                self.t_ = np.mean(y)
-                return
-            if y.nunique() == 1:
-                self.t_ = y.iloc[0]
-                return
-
-        attribute, bestval = opt_split_attribute(X, y, self.criterion, X.columns)
-        # print(attribute)
-
-        self.t_ = {attribute: {}}
-        xleft, yleft, xright, yright = splitdataframe(X, y, attribute, bestval)
-        leftsubtree = DecisionTree(self.criterion, max_depth=self.max_depth)
-        leftsubtree.fit(xleft, yleft, depth + 1)
-        self.t_[attribute]['left'] = leftsubtree.t_
-        rightsubtree = DecisionTree(self.criterion, max_depth=self.max_depth)
-        rightsubtree.fit(xright, yright, depth + 1)
-        self.t_[attribute]['right'] = rightsubtree.t_
-
-    # def predict_single(self, x: pd.Series, tree) -> float:
-    #     """
-    #     Helper function to predict the value for a single data point.
-    #     """
-    #     if not check_ifreal(x):
-    #         if isinstance(tree, pd.Series):
-    #             return tree
-    #         attribute = list(tree.keys())[0]
-    #         if x[attribute] <= tree[attribute]['bestval']:
-    #             return self.predict_single(x, tree[attribute]['left'])
-    #         else:
-    #             return self.predict_single(x, tree[attribute]['right'])
-    #     else:
-    #         if isinstance(tree, (int, float)):
-    #             return tree
-    #         attribute = list(tree.keys())[0]
-    #         if x[attribute] <= tree[attribute]['left']:
-    #             return self.predict_single(x, tree[attribute]['left'])
-    #         else:
-    #             return self.predict_single(x, tree[attribute]['right'])
-    #
-    # def predict(self, X: pd.DataFrame) -> pd.Series:
-    #     """
-    #     Funtion to run the decision tree on test inputs
-    #
-    #     """
-    #     # return X.apply(lambda x: self.predict_single(x, self.t_), axis=1)
-    #
-    #     # Traverse the tree you constructed to return the predicted values for the given test inputs.
-    #
-    #     pass
-
-
-
-    def traverse_tree(self, node, x_row):
-        """
-        Traverse the decision tree to predict the class label for a single row of input data.
-        """
-        if isinstance(node, dict):  # Internal node
-            attribute = list(node.keys())[0]
-            subtree = node[attribute]
-
-            split_value = list(subtree.keys())[0]
-
-            if isinstance(split_value, (int, float)):  # Numerical split
-                if x_row[attribute] <= split_value:
-                    return self.traverse_tree(subtree[split_value]['left'], x_row)
-                else:
-                    return self.traverse_tree(subtree[split_value]['right'], x_row)
-            else:  # Categorical split
-                if x_row[attribute] == split_value:
-                    return self.traverse_tree(subtree[split_value]['left'], x_row)
-                else:
-                    return self.traverse_tree(subtree[split_value]['right'], x_row)
-        else:  # Leaf node
+    def fit(self,X,y) -> None:
+        X = pd.DataFrame(X)
+        y = pd.Series(y)
+        X_ohe = one_hot_encoding(X)
+        self.tree = self.buildTree(X_ohe,y,0)
+        self.isRealOutput = isReal(y)
+    
+    def buildTree(self,X,y,depth) -> Node:
+        node = Node(None,None,None,None,None)
+        if depth >= self.maxDepth or len(y.unique()) == 1:
+            node.value = y.mean() if self.isRealOutput else y.mode()[0]
             return node
+        bestFeature,bestThreshold = bestSplit(X,y,self.criterion)
+        if bestFeature is None:
+            node.value = y.mean() if self.isRealOutput else y.mode()[0]
+            return node
+        leftX,rightX,leftY,rightY = split(X,y,bestThreshold,bestFeature)
+        node.feature = bestFeature
+        node.threshold = bestThreshold
+        node.left = self.buildTree(leftX,leftY,depth+1)
+        node.right = self.buildTree(rightX,rightY,depth+1)
+        return node
 
-    def predict(self, X: pd.DataFrame) -> pd.Series:
-        """
-        Predict the class labels for the given input data X.
-        """
-        predictions = X.apply(lambda x_row: self.traverse_tree(self.t_, x_row), axis=1)
-        return pd.Series(predictions)
+    def predictOne(self,node,row) -> float:
+        if node.value is not None:
+            return node.value
+        if row[node.feature] <= node.threshold:
+            return self.predictOne(node.left,row)
+        else:
+            return self.predictOne(node.right,row)
 
-    # def predict(self, X: pd.DataFrame) -> pd.Series:
-    #     """
-    #     Function to predict the output for the given test inputs.
-    #     It traverses the decision tree constructed during the fit process.
-    #     """
-    #
-    #     def traverse_tree(node, x_row):
-    #         if isinstance(node, dict):  # Node is a decision node
-    #             attribute = list(node.keys())[0]
-    #             subtree = node[attribute]
-    #
-    #             # Check if the split is based on a threshold (continuous feature) or equality (categorical feature)
-    #             split_value = list(subtree.keys())[0]
-    #
-    #             if isinstance(split_value, (int, float, np.number)):  # Continuous feature
-    #                 if x_row[attribute] <= split_value:
-    #                     return traverse_tree(subtree[split_value]['left'], x_row)
-    #                 else:
-    #                     return traverse_tree(subtree[split_value]['right'], x_row)
-    #             else:  # Discrete feature
-    #                 if x_row[attribute] == split_value:
-    #                     return traverse_tree(subtree[split_value]['left'], x_row)
-    #                 else:
-    #                     return traverse_tree(subtree[split_value]['right'], x_row)
-    #         else:  # Leaf node
-    #             return node
-    #
-    #     # Apply the traverse_tree function to each row in X
-    #     predictions = X.apply(lambda x_row: traverse_tree(self.t_, x_row), axis=1)
-    #
-    #     return pd.Series(predictions)
+    def predict(self,X) -> np.ndarray:
+        X = pd.DataFrame(X)
+        X_ohe = one_hot_encoding(X)
+        out = []
+        for i in range(X_ohe.shape[0]):
+            out.append(self.predictOne(self.tree,X_ohe.iloc[i]))
 
-    # Example usage:
-    # Assuming you have fitted your model:
-    # dt = DecisionTree(criterion='entropy', max_depth=3)
-    # dt.fit(X_train, y_train)
-    # predictions = dt.predict(X_test)
-
+        return np.array(out)
+    
     def plot(self) -> None:
-        """
-        Function to plot the tree
+        def plot_node(node, depth):
+            indent = "    " * depth  # Indentation for each level of depth
+            if node.value is not None:
+                print(f"{indent}Class {node.value}")
+                return
+            
+            # Print the decision condition at the current node
+            print(f"{indent}?({node.feature} > {node.threshold})")
+            
+            # Print the left (Y: Yes) branch
+            print(f"{indent}Y: ", end="")
+            plot_node(node.left, depth + 1)
+            
+            # Print the right (N: No) branch
+            print(f"{indent}N: ", end="")
+            plot_node(node.right, depth + 1)
+        
+        # Start plotting from the root of the tree
+        plot_node(self.tree, 0)
 
-        Output Example:
-        ?(X1 > 4)
-            Y: ?(X2 > 7)
-                Y: Class A
-                N: Class B
-            N: Class C
-        Where Y => Yes and N => No
-        """
-        pass
+    def plotGraph(self) -> None:
+        # Helper function to recursively plot the tree
+        def plot_node(node, depth, x, y, dx):
+            if node is None:
+                return
+            
+            # Plot the current node
+            plt.text(x, y, f'{node.feature}\n<= {node.threshold}' if node.value is None else f'Value: {node.value:.2f}',
+                     ha='center', va='center', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5'))
+            
+            # Calculate the positions of the child nodes
+            if node.left is not None:
+                plt.plot([x, x - dx], [y, y - 1], 'k-')
+                plot_node(node.left, depth + 1, x - dx, y - 1, dx / 2)
+                
+            if node.right is not None:
+                plt.plot([x, x + dx], [y, y - 1], 'k-')
+                plot_node(node.right, depth + 1, x + dx, y - 1, dx / 2)
 
-
-# N = 30
-# P = 5
-# X = pd.DataFrame(np.random.randn(N, P))
-# X.columns = ["A", "B", "C", "D", "E"]
-# y = pd.Series(np.random.randn(N))
-# tree = DecisionTree(criterion='entropy', max_depth=4)
-# tree.fit(X, y)
+        # Initial call to the helper function
+        plt.figure(figsize=(12, 8))
+        plot_node(self.tree, 0, 0, 0, 1)
+        plt.axis('off')
+        plt.show()

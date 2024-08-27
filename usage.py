@@ -16,7 +16,8 @@ from metrics import *
 np.random.seed(4)
 # Test case 1
 # Real Input and Real Output
-
+print("-----------------Test case 1-----------------")
+print("Real Input and Real Output")
 N = 30
 P = 5
 X = pd.DataFrame(np.random.randn(N, P))
@@ -41,9 +42,12 @@ for criteria in ["information_gain", "gini_index"]:
     print(f"RMSE: {rmse(y_hat, y)}")
     print(f"MAE: {mae(y_hat, y)}")
 
-# print('Done')
+print('Done')
 # Test case 2
 # Real Input and Discrete Output
+
+print("-----------------Test case 2-----------------")
+print("Real Input and Discrete Output")
 
 N = 30
 P = 5
@@ -61,9 +65,12 @@ for criteria in ["information_gain", "gini_index"]:
         print(f"Precision:{precision(y_hat, y, cls)}")
         print(f"Recall: {recall(y_hat, y, cls)}")
 
-# print('Done')
+print('Done')
 # Test case 3
 # Discrete Input and Discrete .Output
+
+print("-----------------Test case 3-----------------")
+print("Discrete Input and Discrete Output")
 
 N = 30
 P = 5
@@ -80,9 +87,12 @@ for criteria in ["information_gain", "gini_index"]:
     for cls in y.unique():
         print(f"Precision:, {precision(y_hat, y, cls)}")
         print(f"Recall: , {recall(y_hat, y, cls)}")
-# print('Done')
+print('Done')
 # Test case 4
 # Discrete Input and Real Output
+
+print("-----------------Test case 4-----------------")
+print("Discrete Input and Real Output")
 
 N = 30
 P = 5
@@ -98,4 +108,4 @@ for criteria in ["information_gain", "gini_index"]:
     print(f"Criteria : {criteria}")
     print(f"RMSE: {rmse(y_hat, y)}")
     print(f"MAE: {mae(y_hat, y)}")
-# print('Done')
+print('Done')
