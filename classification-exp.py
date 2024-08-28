@@ -60,7 +60,7 @@ for fold_size in fold_sizes:
     current = stop
 
 fold_accuracies = []
-
+print("For first class:")
 for i in range(n_folds):
     # Create the training and validation sets
     train_indices = np.concatenate([folds[j] for j in range(n_folds) if j != i])
@@ -73,6 +73,23 @@ for i in range(n_folds):
     fold_accuracies.append(acc)
     print(f"Fold {i + 1}, Accuracy: {acc:.4f}")
 
+print(f"Mean accuracy is {np.mean(fold_accuracies)}")
+
+print("For second class:")
+fold_accuracies = []
+for i in range(n_folds):
+    # Create the training and validation sets
+    train_indices = np.concatenate([folds[j] for j in range(n_folds) if j != i])
+    val_indices = folds[i]
+
+    X_train, y_train = pd.DataFrame(X[train_indices, 1]), pd.Series(y[train_indices])
+    X_val, y_val = pd.DataFrame(X[val_indices, 1]), pd.Series(y[val_indices])
+    tree.fit(X_train, y_train)
+    acc = sum(y_val == tree.predict(X_val)) / len(y_val)
+    fold_accuracies.append(acc)
+    print(f"Fold {i + 1}, Accuracy: {acc:.4f}")
+
+print(f"Mean accuracy is {np.mean(fold_accuracies)}")
 
 def splitfold(x, n):
     i = np.arange(len(x))
@@ -81,13 +98,13 @@ def splitfold(x, n):
     return f
 
 
-def nestedvalid(x, y, depths=[2, 3, 4, 5, 6], ofold=5, ifold=5):
+def nestedvalid(x, y,cl, depths=[2, 3, 4, 5, 6], ofold=5, ifold=5):
     oscore = []
     ofold_indices = splitfold(x, ofold)
     for outer_train_indices in ofold_indices:
         outer_test_indices = np.concatenate(
             [outer_train_indices for idx in range(ofold) if not np.array_equal(outer_train_indices, idx)])
-        X_train, X_test = X[outer_train_indices, 0], X[outer_test_indices, 0]
+        X_train, X_test = X[outer_train_indices, cl], X[outer_test_indices, cl]
         y_train, y_test = y[outer_train_indices], y[outer_test_indices]
         inner_folds_indices = splitfold(X_train, ifold)
         best_depth = None
@@ -115,6 +132,10 @@ def nestedvalid(x, y, depths=[2, 3, 4, 5, 6], ofold=5, ifold=5):
     return np.mean(oscore) * 100, np.std(oscore)
 
 
-mscore, stdcore = nestedvalid(X, y, depths=[2, 3, 4, 5, 6], ofold=5, ifold=5)
-print(str(mscore) + " % Accuracy")
+mscore, stdcore = nestedvalid(X, y,0, depths=[2, 3, 4, 5, 6], ofold=5, ifold=5)
+print(str(mscore) + " % Accuracy for first class")
+print("Standard Deviation is " + str(stdcore))
+
+mscore, stdcore = nestedvalid(X, y,1, depths=[2, 3, 4, 5, 6], ofold=5, ifold=5)
+print(str(mscore) + " % Accuracy for second class")
 print("Standard Deviation is " + str(stdcore))

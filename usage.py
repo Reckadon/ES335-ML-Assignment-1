@@ -38,6 +38,7 @@ for criteria in ["information_gain", "gini_index"]:
     y_hat = tree.predict(X)
     y_hat = pd.Series(y_hat)
     tree.plot()
+    tree.plotGraph()
     print(f"Criteria :, {criteria}")
     print(f"RMSE: {rmse(y_hat, y)}")
     print(f"MAE: {mae(y_hat, y)}")
@@ -59,6 +60,7 @@ for criteria in ["information_gain", "gini_index"]:
     tree.fit(X, y)
     y_hat = tree.predict(X)
     tree.plot()
+    tree.plotGraph()
     print(f"Criteria : {criteria}")
     print(f"Accuracy: {accuracy(y_hat, y)}")
     for cls in y.unique():
@@ -82,6 +84,7 @@ for criteria in ["information_gain", "gini_index"]:
     tree.fit(X, y)
     y_hat = tree.predict(X)
     tree.plot()
+    tree.plotGraph()
     print(f"Criteria :, {criteria}")
     print(f"Accuracy: , {accuracy(y_hat, y)}")
     for cls in y.unique():
@@ -105,6 +108,7 @@ for criteria in ["information_gain", "gini_index"]:
     y_hat = tree.predict(X)
 
     tree.plot()
+    tree.plotGraph()
     print(f"Criteria : {criteria}")
     print(f"RMSE: {rmse(y_hat, y)}")
     print(f"MAE: {mae(y_hat, y)}")
